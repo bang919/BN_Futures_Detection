@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="utf-8">
+    <title>币安合约实时监控</title>
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 40px; background: #fafafa; color: #111; }
+        h1 { margin-top: 0; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #e5e5e5; padding: 8px; text-align: right; }
+        th { background-color: #f4f4f4; }
+        td.symbol { text-align: left; font-weight: 600; }
+        tr:hover { background-color: #f9f9f9; }
+        .positive { color: #0a7d00; }
+        .negative { color: #b30000; }
+        .alert-cell { background: #fee2e2; color: #b91c1c; font-weight: 700; }
+        .dashboard { display: flex; flex-wrap: wrap; gap: 24px; }
+        .panel { background: #fff; border: 1px solid #e1e1e1; border-radius: 12px; padding: 24px; flex: 1 1 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.04); }
+        .panel h2 { margin-top: 0; }
+        .settings { margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px; }
+        .settings h3 { margin-top: 0; }
+        .settings-form { display: flex; flex-direction: column; gap: 16px; }
+        .settings-form label { font-weight: 600; margin-bottom: 4px; display: inline-block; text-align: left; }
+        .settings-form select,
+        .settings-form input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .settings-form button { padding: 10px 16px; border: none; border-radius: 6px; background: #2563eb; color: #fff; font-weight: 600; cursor: pointer; }
+        .settings-form button:hover { background: #1d4ed8; }
+        .alert-overlay { position: fixed; inset: 0; background: rgba(255, 0, 0, 0.25); display: flex; align-items: center; justify-content: center; z-index: 999; }
+        .alert-overlay.hidden { display: none; }
+        .alert-modal { background: #fff; border-radius: 12px; padding: 24px; width: min(420px, 90%); text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.25); }
+        .alert-list { text-align: left; margin: 12px 0; }
+        .alert-modal button { margin-top: 12px; padding: 10px 16px; border: none; border-radius: 6px; background: #dc2626; color: #fff; font-weight: 600; cursor: pointer; }
+        body.alert-active { animation: flash-bg 1s linear infinite; }
+        @keyframes flash-bg {
+            0% { background-color: #fafafa; }
+            50% { background-color: #ffe5e5; }
+            100% { background-color: #fafafa; }
+        }
+        .placeholder { text-align: center; color: #666; padding: 24px 0; }
+    </style>
+</head>
+<body>
+    <h1>币安合约实时监控看板</h1>
+    <div id="alert-overlay" class="alert-overlay hidden">
+        <div class="alert-modal">
+            <h3>短期升幅预警</h3>
+            <p>以下交易对的短期升幅已超过 <span id="alert-threshold-label">5.0</span>%。</p>
+            <ul class="alert-list"></ul>
+            <button id="alert-ack">知道了</button>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <section class="panel">
+            <h2>24 小时涨幅榜</h2>
+            <p>按 24 小时升幅排序，实时展示合约行情。</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>交易对</th>
+                        <th>最新价</th>
+                        <th>开盘价</th>
+                        <th>24 小时升幅</th>
+                        <th>成交量</th>
+                        <th>成交额</th>
+                    </tr>
+                </thead>
+                <tbody id="long-table-body">
+                    <tr><td class="placeholder" colspan="6">等待行情数据…</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="panel">
+            <h2>短期涨幅榜</h2>
+            <p>按最近 <span id="short-window-text">1</span> 分钟升幅排序，展示前 <span id="short-limit-text">10</span> 个交易对。</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>交易对</th>
+                        <th>最新价</th>
+                        <th><span id="short-window-header">1</span> 分钟前</th>
+                        <th>短期升幅</th>
+                    </tr>
+                </thead>
+                <tbody id="short-table-body">
+                    <tr><td class="placeholder" colspan="4">等待行情数据…</td></tr>
+                </tbody>
+            </table>
+
+            <div class="settings">
+                <h3>设置</h3>
+                <form class="settings-form" id="settings-form">
+                    <div>
+                        <label for="short_window">设置时长监听</label>
+                        <select id="short_window" name="short_window">
+                            <option value="1">1 分钟</option>
+                            <option value="2">2 分钟</option>
+                            <option value="5">5 分钟</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="short_limit">短期涨幅榜显示数量</label>
+                        <input id="short_limit" type="number" min="1" max="50" name="short_limit" value="10">
+                    </div>
+                    <div>
+                        <label for="short_threshold">短期升幅预警阈值 (%)</label>
+                        <input id="short_threshold" type="number" min="0.1" max="100" step="0.1" name="short_threshold" value="5.0">
+                    </div>
+                    <div>
+                        <label for="short_sound">是否打开预警声音</label>
+                        <select id="short_sound" name="short_sound">
+                            <option value="1">开启</option>
+                            <option value="0">关闭</option>
+                        </select>
+                    </div>
+                    <button type="submit">保存设置</button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <script>
+    const SETTINGS_KEY = 'shortSettings_v1';
+    const DEFAULT_SETTINGS = {
+        shortWindow: 1,
+        shortLimit: 10,
+        shortThreshold: 5.0,
+        shortSound: true,
+    };
+    let settings = null;
+    const MAX_HISTORY_MINUTES = 5;
+    const WS_URL = 'wss://fstream.binance.com/stream';
+    const SUB_MESSAGE = {
+        method: 'SUBSCRIBE',
+        params: ['!miniTicker@arr'],
+        id: 1,
+    };
+
+    const tickerMap = new Map();
+    const priceHistory = new Map();
+
+    const longTableBody = document.getElementById('long-table-body');
+    const shortTableBody = document.getElementById('short-table-body');
+    const shortWindowText = document.getElementById('short-window-text');
+    const shortLimitText = document.getElementById('short-limit-text');
+    const shortWindowHeader = document.getElementById('short-window-header');
+    const overlay = document.getElementById('alert-overlay');
+    const alertList = overlay.querySelector('.alert-list');
+    const alertThresholdLabel = document.getElementById('alert-threshold-label');
+    const alertAckButton = document.getElementById('alert-ack');
+    const ALERT_STORAGE_KEY = 'shortAlertAck_v2';
+    const settingsForm = document.getElementById('settings-form');
+    let websocket;
+    let reconnectDelay = 1000;
+    let audioCtx;
+    let alertToneTimer = null;
+
+    function formatPrice(value) {
+        if (!isFinite(value)) return '-';
+        return Number(value).toFixed(6);
+    }
+
+    function formatNumber(value) {
+        if (!isFinite(value)) return '-';
+        return Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 });
+    }
+
+    function formatPercent(value) {
+        if (!isFinite(value)) return '-';
+        return (value * 100).toFixed(2) + '%';
+    }
+
+    function recordHistory(symbol, price, eventTime) {
+        if (!isFinite(price)) return;
+        const timestamp = typeof eventTime === 'number' ? eventTime : Date.now();
+        const minuteKey = Math.floor(timestamp / 60000);
+        const entries = priceHistory.get(symbol) || [];
