@@ -1,512 +1,879 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh">
-<head>
-    <meta charset="utf-8">
+  <head>
+    <meta charset="utf-8" />
     <title>币安合约实时监控</title>
     <style>
-        body { font-family: system-ui, sans-serif; margin: 40px; background: #fafafa; color: #111; }
-        h1 { margin-top: 0; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #e5e5e5; padding: 8px; text-align: right; }
-        th { background-color: #f4f4f4; }
-        td.symbol { text-align: left; font-weight: 600; }
-        tr:hover { background-color: #f9f9f9; }
-        .positive { color: #0a7d00; }
-        .negative { color: #b30000; }
-        .alert-cell { background: #fee2e2; color: #b91c1c; font-weight: 700; }
-        .dashboard { display: flex; flex-wrap: wrap; gap: 24px; }
-        .panel { background: #fff; border: 1px solid #e1e1e1; border-radius: 12px; padding: 24px; flex: 1 1 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.04); }
-        .panel h2 { margin-top: 0; }
-        .settings { margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px; }
-        .settings h3 { margin-top: 0; }
-        .settings-form { display: flex; flex-direction: column; gap: 16px; }
-        .settings-form label { font-weight: 600; margin-bottom: 4px; display: inline-block; text-align: left; }
-        .settings-form select,
-        .settings-form input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-        .settings-form button { padding: 10px 16px; border: none; border-radius: 6px; background: #2563eb; color: #fff; font-weight: 600; cursor: pointer; }
-        .settings-form button:hover { background: #1d4ed8; }
-        .alert-overlay { position: fixed; inset: 0; background: rgba(255, 0, 0, 0.25); display: flex; align-items: center; justify-content: center; z-index: 999; }
-        .alert-overlay.hidden { display: none; }
-        .alert-modal { background: #fff; border-radius: 12px; padding: 24px; width: min(420px, 90%); text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.25); }
-        .alert-list { text-align: left; margin: 12px 0; }
-        .alert-modal button { margin-top: 12px; padding: 10px 16px; border: none; border-radius: 6px; background: #dc2626; color: #fff; font-weight: 600; cursor: pointer; }
-        body.alert-active { animation: flash-bg 1s linear infinite; }
-        @keyframes flash-bg {
-            0% { background-color: #fafafa; }
-            50% { background-color: #ffe5e5; }
-            100% { background-color: #fafafa; }
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 40px;
+        background: #fafafa;
+        color: #111;
+      }
+      h1 {
+        margin-top: 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        border: 1px solid #e5e5e5;
+        padding: 8px;
+        text-align: right;
+      }
+      th {
+        background-color: #f4f4f4;
+      }
+      td.symbol {
+        text-align: left;
+        font-weight: 600;
+      }
+      tr:hover {
+        background-color: #f9f9f9;
+      }
+      .positive {
+        color: #0a7d00;
+      }
+      .negative {
+        color: #b30000;
+      }
+      .alert-cell {
+        background: #fee2e2;
+        color: #b91c1c;
+        font-weight: 700;
+      }
+      .dashboard {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+      }
+      .panel {
+        background: #fff;
+        border: 1px solid #e1e1e1;
+        border-radius: 12px;
+        padding: 24px;
+        flex: 1 1 420px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
+      }
+      .panel h2 {
+        margin-top: 0;
+      }
+      .settings {
+        margin-top: 24px;
+        border-top: 1px solid #eee;
+        padding-top: 16px;
+      }
+      .settings h3 {
+        margin-top: 0;
+      }
+      .settings-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .settings-form label {
+        font-weight: 600;
+        margin-bottom: 4px;
+        display: inline-block;
+        text-align: left;
+      }
+      .settings-form select,
+      .settings-form input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+      .settings-form button {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 6px;
+        background: #2563eb;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .settings-form button:hover {
+        background: #1d4ed8;
+      }
+      .alert-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(255, 0, 0, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+      }
+      .alert-overlay.hidden {
+        display: none;
+      }
+      .alert-modal {
+        background: #fff;
+        border-radius: 12px;
+        padding: 24px;
+        width: min(420px, 90%);
+        text-align: center;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+      }
+      .alert-list {
+        text-align: left;
+        margin: 12px 0;
+      }
+      .alert-modal button {
+        margin-top: 12px;
+        padding: 10px 16px;
+        border: none;
+        border-radius: 6px;
+        background: #dc2626;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      body.alert-active {
+        animation: flash-bg 1s linear infinite;
+      }
+      @keyframes flash-bg {
+        0% {
+          background-color: #fafafa;
         }
-        .placeholder { text-align: center; color: #666; padding: 24px 0; }
+        50% {
+          background-color: #ffe5e5;
+        }
+        100% {
+          background-color: #fafafa;
+        }
+      }
+      .placeholder {
+        text-align: center;
+        color: #666;
+        padding: 24px 0;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>币安合约实时监控看板</h1>
     <div id="alert-overlay" class="alert-overlay hidden">
-        <div class="alert-modal">
-            <h3>短期升幅预警</h3>
-            <p>以下交易对的短期升幅已超过 <span id="alert-threshold-label">5.0</span>%。</p>
-            <ul class="alert-list"></ul>
-            <button id="alert-ack">知道了</button>
-        </div>
+      <div class="alert-modal">
+        <h3>短期涨幅预警</h3>
+        <p>
+          以下交易对的短期涨幅已超过
+          <span id="alert-threshold-label">5.0</span>%。
+        </p>
+        <ul class="alert-list"></ul>
+        <button id="alert-ack">知道了</button>
+      </div>
     </div>
 
     <div class="dashboard">
-        <section class="panel">
-            <h2>24 小时涨幅榜</h2>
-            <p>按 24 小时升幅排序，实时展示合约行情。</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>交易对</th>
-                        <th>最新价</th>
-                        <th>开盘价</th>
-                        <th>24 小时升幅</th>
-                        <th>成交量</th>
-                        <th>成交额</th>
-                    </tr>
-                </thead>
-                <tbody id="long-table-body">
-                    <tr><td class="placeholder" colspan="6">等待行情数据…</td></tr>
-                </tbody>
-            </table>
-        </section>
+      <section class="panel">
+        <h2>24 小时涨幅榜</h2>
+        <p>按 24 小时涨幅排序，实时展示合约行情。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>交易对</th>
+              <th>最新价</th>
+              <th>开盘价</th>
+              <th>24 小时涨幅</th>
+              <th>成交量</th>
+              <th>成交额</th>
+            </tr>
+          </thead>
+          <tbody id="long-table-body">
+            <tr>
+              <td class="placeholder" colspan="6">等待行情数据…</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
 
-        <section class="panel">
-            <h2>短期涨幅榜</h2>
-            <p>按最近 <span id="short-window-text">1</span> 分钟升幅排序，展示前 <span id="short-limit-text">10</span> 个交易对。</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>交易对</th>
-                        <th>最新价</th>
-                        <th><span id="short-window-header">1</span> 分钟前</th>
-                        <th>短期升幅</th>
-                    </tr>
-                </thead>
-                <tbody id="short-table-body">
-                    <tr><td class="placeholder" colspan="4">等待行情数据…</td></tr>
-                </tbody>
-            </table>
+      <section class="panel">
+        <h2>短期涨幅榜</h2>
+        <p>
+          按最近 <span id="short-window-text">1</span> 分钟涨幅排序，展示前
+          <span id="short-limit-text">10</span> 个交易对。
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>交易对</th>
+              <th>最新价</th>
+              <th><span id="short-window-header">1</span> 分钟前</th>
+              <th>短期涨幅</th>
+            </tr>
+          </thead>
+          <tbody id="short-table-body">
+            <tr>
+              <td class="placeholder" colspan="4">等待行情数据…</td>
+            </tr>
+          </tbody>
+        </table>
 
-            <div class="settings">
-                <h3>设置</h3>
-                <form class="settings-form" id="settings-form">
-                    <div>
-                        <label for="short_window">设置时长监听</label>
-                        <select id="short_window" name="short_window">
-                            <option value="1">1 分钟</option>
-                            <option value="2">2 分钟</option>
-                            <option value="5">5 分钟</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="short_limit">短期涨幅榜显示数量</label>
-                        <input id="short_limit" type="number" min="1" max="50" name="short_limit" value="10">
-                    </div>
-                    <div>
-                        <label for="short_threshold">短期升幅预警阈值 (%)</label>
-                        <input id="short_threshold" type="number" min="0.1" max="100" step="0.1" name="short_threshold" value="5.0">
-                    </div>
-                    <div>
-                        <label for="short_sound">是否打开预警声音</label>
-                        <select id="short_sound" name="short_sound">
-                            <option value="1">开启</option>
-                            <option value="0">关闭</option>
-                        </select>
-                    </div>
-                    <button type="submit">保存设置</button>
-                </form>
+        <div class="settings">
+          <h3>设置</h3>
+          <form class="settings-form" id="settings-form">
+            <div>
+              <label for="short_window">设置时长监听</label>
+              <select id="short_window" name="short_window">
+                <option value="1">1 分钟</option>
+                <option value="2">2 分钟</option>
+                <option value="5">5 分钟</option>
+              </select>
             </div>
-        </section>
+            <div>
+              <label for="short_limit">短期涨幅榜显示数量</label>
+              <input
+                id="short_limit"
+                type="number"
+                min="1"
+                max="50"
+                name="short_limit"
+                value="10"
+              />
+            </div>
+            <div>
+              <label for="short_threshold">短期涨幅预警阈值 (%)</label>
+              <input
+                id="short_threshold"
+                type="number"
+                min="0.1"
+                max="100"
+                step="0.1"
+                name="short_threshold"
+                value="5.0"
+              />
+            </div>
+            <div>
+              <label for="short_sound">是否打开预警声音</label>
+              <select id="short_sound" name="short_sound">
+                <option value="1">开启</option>
+                <option value="0">关闭</option>
+              </select>
+            </div>
+            <button type="submit">保存设置</button>
+          </form>
+        </div>
+      </section>
     </div>
 
     <script>
-    const SETTINGS_KEY = 'shortSettings_v1';
-    const DEFAULT_SETTINGS = {
+      const SETTINGS_KEY = "shortSettings_v1";
+      const DEFAULT_SETTINGS = {
         shortWindow: 1,
         shortLimit: 10,
         shortThreshold: 5.0,
         shortSound: true,
-    };
-    let settings = null;
-    const MAX_HISTORY_MINUTES = 5;
-    const WS_URL = 'wss://fstream.binance.com/stream';
-    const SUB_MESSAGE = {
-        method: 'SUBSCRIBE',
-        params: ['!miniTicker@arr'],
+      };
+      let settings = null;
+      const MAX_HISTORY_MINUTES = 5;
+      const WS_URL = "wss://fstream.binance.com/stream";
+      const SUB_MESSAGE = {
+        method: "SUBSCRIBE",
+        params: ["!miniTicker@arr"],
         id: 1,
-    };
+      };
 
-    const tickerMap = new Map();
-    const priceHistory = new Map();
+      const tickerMap = new Map();
+      const priceHistory = new Map();
+      let priceHistorySaveTimer = null;
 
-    const longTableBody = document.getElementById('long-table-body');
-    const shortTableBody = document.getElementById('short-table-body');
-    const shortWindowText = document.getElementById('short-window-text');
-    const shortLimitText = document.getElementById('short-limit-text');
-    const shortWindowHeader = document.getElementById('short-window-header');
-    const overlay = document.getElementById('alert-overlay');
-    const alertList = overlay.querySelector('.alert-list');
-    const alertThresholdLabel = document.getElementById('alert-threshold-label');
-    const alertAckButton = document.getElementById('alert-ack');
-    const ALERT_STORAGE_KEY = 'shortAlertAck_v2';
-    const settingsForm = document.getElementById('settings-form');
-    let websocket;
-    let reconnectDelay = 1000;
-    let audioCtx;
-    let alertToneTimer = null;
+      const longTableBody = document.getElementById("long-table-body");
+      const shortTableBody = document.getElementById("short-table-body");
+      const shortWindowText = document.getElementById("short-window-text");
+      const shortLimitText = document.getElementById("short-limit-text");
+      const shortWindowHeader = document.getElementById("short-window-header");
+      const overlay = document.getElementById("alert-overlay");
+      const alertList = overlay.querySelector(".alert-list");
+      const alertThresholdLabel = document.getElementById(
+        "alert-threshold-label"
+      );
+      const alertAckButton = document.getElementById("alert-ack");
+      const ALERT_STORAGE_KEY = "shortAlertAck_v2";
+      const PRICE_HISTORY_STORAGE_KEY = "priceHistory_v1";
+      const HISTORY_SAVE_DEBOUNCE_MS = 500;
+      const settingsForm = document.getElementById("settings-form");
+      let websocket;
+      let reconnectDelay = 1000;
+      let audioCtx;
+      let alertToneTimer = null;
 
-    function formatPrice(value) {
-        if (!isFinite(value)) return '-';
+      function formatPrice(value) {
+        if (!isFinite(value)) return "-";
         return Number(value).toFixed(6);
-    }
+      }
 
-    function formatNumber(value) {
-        if (!isFinite(value)) return '-';
-        return Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 });
-    }
+      function formatNumber(value) {
+        if (!isFinite(value)) return "-";
+        return Number(value).toLocaleString("en-US", {
+          maximumFractionDigits: 0,
+        });
+      }
 
-    function formatPercent(value) {
-        if (!isFinite(value)) return '-';
-        return (value * 100).toFixed(2) + '%';
-    }
+      function formatPercent(value) {
+        if (!isFinite(value)) return "-";
+        return (value * 100).toFixed(2) + "%";
+      }
 
-    function recordHistory(symbol, price, eventTime) {
+      function getHistoryAgeMinutes(entry) {
+        if (!entry) return NaN;
+        const reference = isFinite(entry.lastUpdatedAt)
+          ? entry.lastUpdatedAt
+          : entry.minute * 60000;
+        if (!isFinite(reference)) return NaN;
+        return Math.max(0, Math.floor((Date.now() - reference) / 60000));
+      }
+
+      function savePriceHistoryNow() {
+        if (priceHistorySaveTimer) {
+          clearTimeout(priceHistorySaveTimer);
+          priceHistorySaveTimer = null;
+        }
+        try {
+          const payload = Array.from(priceHistory.entries()).map(
+            ([symbol, entries]) => [
+              symbol,
+              entries.map((entry) => ({
+                minute: entry.minute,
+                price: entry.price,
+                values: Array.isArray(entry.values) ? entry.values : [],
+                finalized: Boolean(entry.finalized),
+                lastUpdatedAt: entry.lastUpdatedAt,
+              })),
+            ]
+          );
+          localStorage.setItem(
+            PRICE_HISTORY_STORAGE_KEY,
+            JSON.stringify(payload)
+          );
+        } catch (err) {
+          console.warn("保存历史记录失败", err);
+        }
+      }
+
+      function schedulePriceHistorySave() {
+        if (priceHistorySaveTimer) return;
+        priceHistorySaveTimer = setTimeout(() => {
+          savePriceHistoryNow();
+        }, HISTORY_SAVE_DEBOUNCE_MS);
+      }
+
+      function normalizeHistoryEntry(raw) {
+        if (!raw) return null;
+        const minute = Number(raw.minute);
+        if (!Number.isFinite(minute)) return null;
+        const values = Array.isArray(raw.values)
+          ? raw.values
+              .map((value) => Number(value))
+              .filter((value) => Number.isFinite(value))
+          : [];
+        let price = Number(raw.price);
+        if (!Number.isFinite(price)) {
+          price = values.length > 0 ? values[values.length - 1] : NaN;
+        }
+        if (!Number.isFinite(price)) {
+          return null;
+        }
+        const lastUpdatedAt = Number(raw.lastUpdatedAt);
+        return {
+          minute,
+          values,
+          price,
+          finalized: Boolean(raw.finalized),
+          lastUpdatedAt: Number.isFinite(lastUpdatedAt)
+            ? lastUpdatedAt
+            : minute * 60000,
+        };
+      }
+
+      function hydratePriceHistory() {
+        try {
+          const raw = JSON.parse(
+            localStorage.getItem(PRICE_HISTORY_STORAGE_KEY) || "null"
+          );
+          if (!Array.isArray(raw)) {
+            return;
+          }
+          priceHistory.clear();
+          const nowMinute = Math.floor(Date.now() / 60000);
+          const cutoff = nowMinute - MAX_HISTORY_MINUTES;
+          for (const [symbol, entries] of raw) {
+            if (typeof symbol !== "string" || !Array.isArray(entries)) continue;
+            const normalized = entries
+              .map((entry) => normalizeHistoryEntry(entry))
+              .filter(
+                (entry) =>
+                  entry &&
+                  Number.isFinite(entry.minute) &&
+                  entry.minute >= cutoff
+              );
+            if (normalized.length > 0) {
+              priceHistory.set(symbol, normalized);
+            }
+          }
+          if (priceHistory.size > 0) {
+            savePriceHistoryNow();
+          }
+        } catch (err) {
+          console.warn("读取历史记录失败", err);
+        }
+      }
+
+      function finalizeHistoryEntry(entry) {
+        if (!entry || entry.finalized) return;
+        if (Array.isArray(entry.values) && entry.values.length > 0) {
+          const sum = entry.values.reduce((acc, value) => acc + value, 0);
+          entry.price = sum / entry.values.length;
+        }
+        entry.finalized = true;
+      }
+
+      function recordHistory(symbol, price, eventTime) {
         if (!isFinite(price)) return;
-        const timestamp = typeof eventTime === 'number' ? eventTime : Date.now();
+        const timestamp =
+          typeof eventTime === "number" ? eventTime : Date.now();
         const minuteKey = Math.floor(timestamp / 60000);
         const entries = priceHistory.get(symbol) || [];
 
-        const existingIndex = entries.findIndex(item => item.minute === minuteKey);
-        if (existingIndex >= 0) {
-            entries[existingIndex].price = price;
+        let entry = entries.find((item) => item.minute === minuteKey);
+        if (entry) {
+          if (!Array.isArray(entry.values)) {
+            entry.values = [];
+          }
+          entry.values.push(price);
+          entry.price = price;
+          entry.lastUpdatedAt = timestamp;
+          entry.finalized = false;
         } else {
-            entries.push({ minute: minuteKey, price });
+          entry = {
+            minute: minuteKey,
+            values: [price],
+            price,
+            lastUpdatedAt: timestamp,
+            finalized: false,
+          };
+          entries.push(entry);
+        }
+
+        for (const item of entries) {
+          if (item.minute < minuteKey && !item.finalized) {
+            finalizeHistoryEntry(item);
+          }
         }
 
         const cutoff = minuteKey - MAX_HISTORY_MINUTES;
-        const filtered = entries.filter(item => item.minute >= cutoff);
+        const filtered = entries.filter((item) => item.minute >= cutoff);
         priceHistory.set(symbol, filtered);
-    }
+        schedulePriceHistorySave();
+      }
 
-    function handleTickerPayload(payload) {
+      function handleTickerPayload(payload) {
         for (const entry of payload) {
-            const symbol = entry.s;
-            const lastPrice = Number(entry.c);
-            const openPrice = Number(entry.o);
-            if (!symbol || !isFinite(lastPrice) || !isFinite(openPrice) || openPrice === 0) {
-                continue;
-            }
-            const pctChange = (lastPrice - openPrice) / openPrice;
-            tickerMap.set(symbol, {
-                symbol,
-                last_price: lastPrice,
-                open_price: openPrice,
-                pct_change: pctChange,
-                volume: Number(entry.v),
-                quote_volume: Number(entry.q),
-            });
-            recordHistory(symbol, lastPrice, entry.E);
+          const symbol = entry.s;
+          const lastPrice = Number(entry.c);
+          const openPrice = Number(entry.o);
+          if (
+            !symbol ||
+            !isFinite(lastPrice) ||
+            !isFinite(openPrice) ||
+            openPrice === 0
+          ) {
+            continue;
+          }
+          const pctChange = (lastPrice - openPrice) / openPrice;
+          tickerMap.set(symbol, {
+            symbol,
+            last_price: lastPrice,
+            open_price: openPrice,
+            pct_change: pctChange,
+            volume: Number(entry.v),
+            quote_volume: Number(entry.q),
+          });
+          recordHistory(symbol, lastPrice, entry.E);
         }
         renderTables();
-    }
+      }
 
-    function getLongTermRows() {
-        return Array.from(tickerMap.values()).sort((a, b) => (b.pct_change ?? -Infinity) - (a.pct_change ?? -Infinity));
-    }
+      function getLongTermRows() {
+        return Array.from(tickerMap.values()).sort(
+          (a, b) => (b.pct_change ?? -Infinity) - (a.pct_change ?? -Infinity)
+        );
+      }
 
-    function getShortTermRows() {
+      function getShortTermRows() {
         const nowMinute = Math.floor(Date.now() / 60000);
         const targetMinute = nowMinute - settings.shortWindow;
         const rows = [];
         for (const [symbol, row] of tickerMap.entries()) {
-            const history = priceHistory.get(symbol);
-            if (!history) continue;
-            const target = history.find(item => item.minute === targetMinute);
-            if (!target || !isFinite(target.price) || target.price === 0) continue;
-            const change = (row.last_price - target.price) / target.price;
-            rows.push({
-                symbol,
-                last_price: row.last_price,
-                reference_price: target.price,
-                short_pct_change: change,
-            });
+          const history = priceHistory.get(symbol);
+          if (!history) continue;
+          const target = history.find((item) => item.minute === targetMinute);
+          if (target && !target.finalized && target.minute < nowMinute) {
+            finalizeHistoryEntry(target);
+          }
+          if (!target || !isFinite(target.price) || target.price === 0)
+            continue;
+          const historyTimestamp = isFinite(target.lastUpdatedAt)
+            ? target.lastUpdatedAt
+            : target.minute * 60000;
+          const historyAgeMinutes = getHistoryAgeMinutes(target);
+          const change = (row.last_price - target.price) / target.price;
+          rows.push({
+            symbol,
+            last_price: row.last_price,
+            reference_price: target.price,
+            short_pct_change: change,
+            history_timestamp: historyTimestamp,
+            history_age_minutes: historyAgeMinutes,
+          });
         }
-        rows.sort((a, b) => (b.short_pct_change ?? -Infinity) - (a.short_pct_change ?? -Infinity));
+        rows.sort(
+          (a, b) =>
+            (b.short_pct_change ?? -Infinity) -
+            (a.short_pct_change ?? -Infinity)
+        );
         return rows.slice(0, settings.shortLimit);
-    }
+      }
 
-    function renderTables() {
+      function renderTables() {
         const longRows = getLongTermRows();
         if (longRows.length === 0) {
-            longTableBody.innerHTML = '<tr><td class="placeholder" colspan="6">等待行情数据…</td></tr>';
+          longTableBody.innerHTML =
+            '<tr><td class="placeholder" colspan="6">等待行情数据…</td></tr>';
         } else {
-            longTableBody.innerHTML = longRows
-                .map(row => {
-                    const cls = row.pct_change >= 0 ? 'positive' : 'negative';
-                    return `
+          longTableBody.innerHTML = longRows
+            .map((row) => {
+              const cls = row.pct_change >= 0 ? "positive" : "negative";
+              return `
                         <tr>
                             <td class="symbol">${row.symbol}</td>
                             <td>${formatPrice(row.last_price)}</td>
                             <td>${formatPrice(row.open_price)}</td>
-                            <td class="${cls}">${formatPercent(row.pct_change)}</td>
+                            <td class="${cls}">${formatPercent(
+                row.pct_change
+              )}</td>
                             <td>${formatNumber(row.volume)}</td>
                             <td>${formatNumber(row.quote_volume)}</td>
                         </tr>
                     `;
-                })
-                .join('');
+            })
+            .join("");
         }
 
         const shortRows = getShortTermRows();
         if (shortRows.length === 0) {
-            shortTableBody.innerHTML = '<tr><td class="placeholder" colspan="4">短期数据尚未准备好…</td></tr>';
+          shortTableBody.innerHTML =
+            '<tr><td class="placeholder" colspan="4">短期数据尚未准备好…</td></tr>';
         } else {
-            shortTableBody.innerHTML = shortRows
-                .map(row => {
-                    const cls = row.short_pct_change >= 0 ? 'positive' : 'negative';
-                    const isAlert = settings.shortThreshold > 0 && row.short_pct_change >= (settings.shortThreshold / 100);
-                    return `
+          shortTableBody.innerHTML = shortRows
+            .map((row) => {
+              const cls = row.short_pct_change >= 0 ? "positive" : "negative";
+              const isAlert =
+                settings.shortThreshold > 0 &&
+                row.short_pct_change >= settings.shortThreshold / 100;
+              const ageLabel = Number.isFinite(row.history_age_minutes)
+                ? `${row.history_age_minutes} 分钟前`
+                : "时间未知";
+              const historyTsAttr = Number.isFinite(row.history_timestamp)
+                ? ` data-history-ts="${row.history_timestamp}"`
+                : "";
+              return `
                         <tr>
                             <td class="symbol">${row.symbol}</td>
                             <td>${formatPrice(row.last_price)}</td>
-                            <td>${formatPrice(row.reference_price)}</td>
-                            <td class="${isAlert ? 'alert-cell' : cls}">${formatPercent(row.short_pct_change)}</td>
+                            <td${historyTsAttr} title="${ageLabel}">
+                              ${formatPrice(row.reference_price)}
+                            </td>
+                            <td class="${
+                              isAlert ? "alert-cell" : cls
+                            }">${formatPercent(row.short_pct_change)}</td>
                         </tr>
                     `;
-                })
-                .join('');
+            })
+            .join("");
         }
         maybeShowAlert(shortRows);
-    }
+      }
 
-    function getAckSet() {
+      function getAckSet() {
         try {
-            const saved = JSON.parse(localStorage.getItem(ALERT_STORAGE_KEY) || '[]');
-            if (Array.isArray(saved)) {
-                return new Set(saved);
-            }
+          const saved = JSON.parse(
+            localStorage.getItem(ALERT_STORAGE_KEY) || "[]"
+          );
+          if (Array.isArray(saved)) {
+            return new Set(saved);
+          }
         } catch (_) {
-            // ignore
+          // ignore
         }
         return new Set();
-    }
+      }
 
-    function saveAckSet(set) {
-        localStorage.setItem(ALERT_STORAGE_KEY, JSON.stringify(Array.from(set)));
-    }
+      function saveAckSet(set) {
+        localStorage.setItem(
+          ALERT_STORAGE_KEY,
+          JSON.stringify(Array.from(set))
+        );
+      }
 
-    function maybeShowAlert(shortRows) {
+      function maybeShowAlert(shortRows) {
         const thresholdRatio = settings.shortThreshold / 100;
         if (!isFinite(thresholdRatio) || thresholdRatio <= 0) {
-            return;
+          return;
         }
         const ackSet = pruneAckSet(shortRows);
-        const pending = shortRows.filter(row => row.short_pct_change >= thresholdRatio && !ackSet.has(row.symbol));
+        const pending = shortRows.filter(
+          (row) =>
+            row.short_pct_change >= thresholdRatio && !ackSet.has(row.symbol)
+        );
         if (pending.length === 0) {
-            return;
+          return;
         }
         alertList.innerHTML = pending
-            .map(row => `<li><strong>${row.symbol}</strong> 短期升幅 ${(row.short_pct_change * 100).toFixed(2)}%</li>`)
-            .join('');
-        overlay.classList.remove('hidden');
-        document.body.classList.add('alert-active');
+          .map(
+            (row) =>
+              `<li><strong>${row.symbol}</strong> 短期涨幅 ${(
+                row.short_pct_change * 100
+              ).toFixed(2)}%</li>`
+          )
+          .join("");
+        overlay.classList.remove("hidden");
+        document.body.classList.add("alert-active");
         startAlertToneLoop();
         sendBackgroundNotification(pending);
 
         const acknowledge = () => {
-            pending.forEach(row => ackSet.add(row.symbol));
-            saveAckSet(ackSet);
-            overlay.classList.add('hidden');
-            document.body.classList.remove('alert-active');
-            stopAlertToneLoop();
-            alertAckButton.removeEventListener('click', acknowledge);
+          pending.forEach((row) => ackSet.add(row.symbol));
+          saveAckSet(ackSet);
+          overlay.classList.add("hidden");
+          document.body.classList.remove("alert-active");
+          stopAlertToneLoop();
+          alertAckButton.removeEventListener("click", acknowledge);
         };
 
-        alertAckButton.addEventListener('click', acknowledge);
-    }
+        alertAckButton.addEventListener("click", acknowledge);
+      }
 
-    function pruneAckSet(shortRows) {
+      function pruneAckSet(shortRows) {
         const ackSet = getAckSet();
-        const currentSymbols = new Set(shortRows.map(row => row.symbol));
+        const currentSymbols = new Set(shortRows.map((row) => row.symbol));
         let mutated = false;
         for (const symbol of Array.from(ackSet)) {
-            if (!currentSymbols.has(symbol)) {
-                ackSet.delete(symbol);
-                mutated = true;
-            }
+          if (!currentSymbols.has(symbol)) {
+            ackSet.delete(symbol);
+            mutated = true;
+          }
         }
         if (mutated) {
-            saveAckSet(ackSet);
+          saveAckSet(ackSet);
         }
         return ackSet;
-    }
+      }
 
-    function connectWebSocket() {
+      function connectWebSocket() {
         websocket = new WebSocket(WS_URL);
-        websocket.addEventListener('open', () => {
-            websocket.send(JSON.stringify(SUB_MESSAGE));
-            reconnectDelay = 1000;
+        websocket.addEventListener("open", () => {
+          websocket.send(JSON.stringify(SUB_MESSAGE));
+          reconnectDelay = 1000;
         });
-        websocket.addEventListener('message', event => {
-            try {
-                const payload = JSON.parse(event.data);
-                if (payload.stream === '!miniTicker@arr' && Array.isArray(payload.data)) {
-                    handleTickerPayload(payload.data);
-                }
-            } catch (err) {
-                console.error('解析行情数据失败', err);
+        websocket.addEventListener("message", (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (
+              payload.stream === "!miniTicker@arr" &&
+              Array.isArray(payload.data)
+            ) {
+              handleTickerPayload(payload.data);
             }
+          } catch (err) {
+            console.error("解析行情数据失败", err);
+          }
         });
-        websocket.addEventListener('close', scheduleReconnect);
-        websocket.addEventListener('error', scheduleReconnect);
-    }
+        websocket.addEventListener("close", scheduleReconnect);
+        websocket.addEventListener("error", scheduleReconnect);
+      }
 
-    function scheduleReconnect() {
+      function scheduleReconnect() {
         if (websocket) {
-            websocket.close();
+          websocket.close();
         }
         setTimeout(connectWebSocket, reconnectDelay);
         reconnectDelay = Math.min(reconnectDelay * 1.5, 15000);
-    }
+      }
 
-    function startAlertToneLoop() {
+      function startAlertToneLoop() {
         if (!settings.shortSound) {
-            return;
+          return;
         }
         if (alertToneTimer) {
-            return;
+          return;
         }
         try {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            const playOnce = () => {
-                const duration = 0.6;
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                oscillator.type = 'sawtooth';
-                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + 0.04);
-                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + duration);
-            };
-            playOnce();
-            alertToneTimer = setInterval(playOnce, 800);
+          if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          const playOnce = () => {
+            const duration = 0.6;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.type = "sawtooth";
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(
+              0.25,
+              audioCtx.currentTime + 0.04
+            );
+            gainNode.gain.exponentialRampToValueAtTime(
+              0.0001,
+              audioCtx.currentTime + duration
+            );
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + duration);
+          };
+          playOnce();
+          alertToneTimer = setInterval(playOnce, 800);
         } catch (err) {
-            console.warn('系统提醒音播放失败', err);
+          console.warn("系统提醒音播放失败", err);
         }
-    }
+      }
 
-    function sendBackgroundNotification(pending) {
+      function sendBackgroundNotification(pending) {
         if (!document.hidden) {
-            return;
+          return;
         }
-        if (!('Notification' in window)) {
-            return;
+        if (!("Notification" in window)) {
+          return;
         }
-        if (Notification.permission === 'granted') {
-            new Notification('短期升幅预警', {
-                body: pending
-                    .map(row => `${row.symbol}: ${(row.short_pct_change * 100).toFixed(2)}%`)
-                    .join('\n'),
-                tag: 'short-term-alert',
-                renotify: true,
-            });
-        } else if (Notification.permission === 'default') {
-            Notification.requestPermission();
+        if (Notification.permission === "granted") {
+          new Notification("短期涨幅预警", {
+            body: pending
+              .map(
+                (row) =>
+                  `${row.symbol}: ${(row.short_pct_change * 100).toFixed(2)}%`
+              )
+              .join("\n"),
+            tag: "short-term-alert",
+            renotify: true,
+          });
+        } else if (Notification.permission === "default") {
+          Notification.requestPermission();
         }
-    }
+      }
 
-    function stopAlertToneLoop() {
+      function stopAlertToneLoop() {
         if (alertToneTimer) {
-            clearInterval(alertToneTimer);
-            alertToneTimer = null;
+          clearInterval(alertToneTimer);
+          alertToneTimer = null;
         }
-    }
+      }
 
-    function clampWindow(value) {
+      function clampWindow(value) {
         return [1, 2, 5].includes(value) ? value : 1;
-    }
+      }
 
-    function clampLimit(value) {
+      function clampLimit(value) {
         return Math.max(1, Math.min(value, 50));
-    }
+      }
 
-    function clampThreshold(value) {
+      function clampThreshold(value) {
         return Math.max(0.1, Math.min(value, 100));
-    }
+      }
 
-    function loadSettings() {
+      function loadSettings() {
         try {
-            const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
-            if (raw && typeof raw === 'object') {
-                return {
-                    shortWindow: clampWindow(Number(raw.shortWindow) || DEFAULT_SETTINGS.shortWindow),
-                    shortLimit: clampLimit(Number(raw.shortLimit) || DEFAULT_SETTINGS.shortLimit),
-                    shortThreshold: clampThreshold(Number(raw.shortThreshold) || DEFAULT_SETTINGS.shortThreshold),
-                    shortSound: normalizeSoundValue('shortSound' in raw ? raw.shortSound : DEFAULT_SETTINGS.shortSound),
-                };
-            }
+          const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
+          if (raw && typeof raw === "object") {
+            return {
+              shortWindow: clampWindow(
+                Number(raw.shortWindow) || DEFAULT_SETTINGS.shortWindow
+              ),
+              shortLimit: clampLimit(
+                Number(raw.shortLimit) || DEFAULT_SETTINGS.shortLimit
+              ),
+              shortThreshold: clampThreshold(
+                Number(raw.shortThreshold) || DEFAULT_SETTINGS.shortThreshold
+              ),
+              shortSound: normalizeSoundValue(
+                "shortSound" in raw
+                  ? raw.shortSound
+                  : DEFAULT_SETTINGS.shortSound
+              ),
+            };
+          }
         } catch (err) {
-            console.warn('加载本地设置失败，使用默认值', err);
+          console.warn("加载本地设置失败，使用默认值", err);
         }
         return { ...DEFAULT_SETTINGS };
-    }
+      }
 
-    function normalizeSoundValue(value) {
-        if (typeof value === 'boolean') {
-            return value;
+      function normalizeSoundValue(value) {
+        if (typeof value === "boolean") {
+          return value;
         }
-        if (typeof value === 'number') {
-            return value !== 0;
+        if (typeof value === "number") {
+          return value !== 0;
         }
-        if (typeof value === 'string') {
-            const lowered = value.toLowerCase();
-            return !['0', 'false', 'off', 'no'].includes(lowered);
+        if (typeof value === "string") {
+          const lowered = value.toLowerCase();
+          return !["0", "false", "off", "no"].includes(lowered);
         }
         return Boolean(value);
-    }
+      }
 
-    function saveSettings() {
+      function saveSettings() {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    }
+      }
 
-    function syncFormWithSettings() {
+      function syncFormWithSettings() {
         settingsForm.short_window.value = String(settings.shortWindow);
         settingsForm.short_limit.value = String(settings.shortLimit);
         settingsForm.short_threshold.value = settings.shortThreshold.toFixed(1);
-        settingsForm.short_sound.value = settings.shortSound ? '1' : '0';
+        settingsForm.short_sound.value = settings.shortSound ? "1" : "0";
         shortWindowText.textContent = settings.shortWindow;
         shortLimitText.textContent = settings.shortLimit;
         shortWindowHeader.textContent = settings.shortWindow;
         alertThresholdLabel.textContent = settings.shortThreshold.toFixed(1);
-    }
+      }
 
-    settingsForm.addEventListener('submit', (event) => {
+      settingsForm.addEventListener("submit", (event) => {
         event.preventDefault();
-        settings.shortWindow = clampWindow(Number(settingsForm.short_window.value));
-        settings.shortLimit = clampLimit(Number(settingsForm.short_limit.value));
-        settings.shortThreshold = clampThreshold(Number(settingsForm.short_threshold.value));
-        settings.shortSound = settingsForm.short_sound.value === '1';
+        settings.shortWindow = clampWindow(
+          Number(settingsForm.short_window.value)
+        );
+        settings.shortLimit = clampLimit(
+          Number(settingsForm.short_limit.value)
+        );
+        settings.shortThreshold = clampThreshold(
+          Number(settingsForm.short_threshold.value)
+        );
+        settings.shortSound = settingsForm.short_sound.value === "1";
         saveSettings();
         syncFormWithSettings();
         renderTables();
-    });
+      });
 
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && !overlay.classList.contains('hidden')) {
-            startAlertToneLoop();
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          savePriceHistoryNow();
+        } else if (!overlay.classList.contains("hidden")) {
+          startAlertToneLoop();
         }
-    });
+      });
 
-    settings = loadSettings();
-    syncFormWithSettings();
-    connectWebSocket();
+      window.addEventListener("beforeunload", () => {
+        savePriceHistoryNow();
+      });
+
+      hydratePriceHistory();
+      settings = loadSettings();
+      syncFormWithSettings();
+      renderTables();
+      connectWebSocket();
     </script>
-</body>
+  </body>
 </html>
