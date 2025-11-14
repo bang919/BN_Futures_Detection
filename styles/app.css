@@ -1,0 +1,175 @@
+body {
+  font-family: system-ui, sans-serif;
+  margin: 40px;
+  background: #fafafa;
+  color: #111;
+}
+
+h1 {
+  margin-top: 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  border: 1px solid #e5e5e5;
+  padding: 8px;
+  text-align: right;
+}
+
+th {
+  background-color: #f4f4f4;
+}
+
+td.symbol {
+  text-align: left;
+  font-weight: 600;
+}
+
+tr:hover {
+  background-color: #f9f9f9;
+}
+
+.positive {
+  color: #0a7d00;
+}
+
+.negative {
+  color: #b30000;
+}
+
+.alert-cell {
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.dashboard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #e1e1e1;
+  border-radius: 12px;
+  padding: 24px;
+  flex: 1 1 420px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
+}
+
+.panel h2 {
+  margin-top: 0;
+}
+
+.settings {
+  margin-top: 24px;
+  border-top: 1px solid #eee;
+  padding-top: 16px;
+}
+
+.settings h3 {
+  margin-top: 0;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-form label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: inline-block;
+  text-align: left;
+}
+
+.settings-form select,
+.settings-form input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.settings-form button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings-form button:hover {
+  background: #1d4ed8;
+}
+
+.alert-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.alert-overlay.hidden {
+  display: none;
+}
+
+.alert-modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  width: min(420px, 90%);
+  text-align: center;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+}
+
+.alert-list {
+  text-align: left;
+  margin: 12px 0;
+}
+
+.alert-modal button {
+  margin-top: 12px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #dc2626;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+body.alert-active {
+  animation: flash-bg 1s linear infinite;
+}
+
+@keyframes flash-bg {
+  0% {
+    background-color: #fafafa;
+  }
+  50% {
+    background-color: #ffe5e5;
+  }
+  100% {
+    background-color: #fafafa;
+  }
+}
+
+.placeholder {
+  text-align: center;
+  color: #666;
+  padding: 24px 0;
+}
